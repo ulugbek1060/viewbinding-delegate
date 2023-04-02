@@ -18,37 +18,46 @@ Please note that you need to copy the source code to work with the delegate, bec
 ###	The usual way -
 
 ```kotlin
-class SampleFragment : Fragment() {
+inline fun <reified B : ViewBinding> Fragment.viewBinding(): ViewBindingDelegate<B> {
+    val fragment = this
+    return ViewBindingDelegate(fragment, B::class.java)
+}
 
-    private var _binding: FragmentSampleBinding? = null
-    private val binding get() = _binding!!
+class ViewBindingDelegate<B : ViewBinding>(
+    private val fragment: Fragment,
+    private val viewBindingClass: Class<B>
+) {
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentSampleBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    var binding: B? = null
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        with(binding) {
-            textView.text = "Some text"
-            button.setOnClickListener {
-                //some action
-            }
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): B {
+        val viewLifecycleOwner = fragment.viewLifecycleOwner
+        if (viewLifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+            throw IllegalStateException("Called after onDestroyView()")
+        } else if (fragment.view != null) {
+            return getOrCreateBinding(viewLifecycleOwner)
+        } else {
+            throw IllegalStateException("Called before onViewCreated()")
         }
-
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
+    @Suppress("UNCHECKED_CAST")
+    private fun getOrCreateBinding(lifecycleOwner: LifecycleOwner): B {
+        return this.binding ?: let {
+            val method = viewBindingClass.getMethod("bind", View::class.java)
+            val binding = method.invoke(null, fragment.view) as B
 
+            lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    super.onDestroy(owner)
+                    this@ViewBindingDelegate.binding = null
+                }
+            })
+
+            this.binding = binding
+            binding
+        }
+    }
 }
 ```
 ###	With the delegate
