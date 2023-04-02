@@ -13,8 +13,6 @@ android {
 ```
 Please note that you need to copy the source code to work with the delegate, because it's not currently in some repository.
 
-## Delegate Fragment 
-
 ```kotlin
 inline fun <reified B : ViewBinding> Fragment.viewBinding(): ViewBindingDelegate<B> {
     val fragment = this
