@@ -13,9 +13,7 @@ android {
 ```
 Please note that you need to copy the source code to work with the delegate, because it's not currently in some repository.
 
-## Fragment sample
-
-###	The usual way -
+## Delegate Fragment 
 
 ```kotlin
 inline fun <reified B : ViewBinding> Fragment.viewBinding(): ViewBindingDelegate<B> {
@@ -64,22 +62,18 @@ class ViewBindingDelegate<B : ViewBinding>(
 
 The delegate considers fragment's view lifecycle, clears the reference when current view is destroyed and prevent memory leaks.
 
-```kotlin
-class ListFragment : Fragment(R.layout.fragment_sample) {
-
-    private val binding: FragmentSampleBinding by viewBindings()
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        with(binding) {
-            textView.text = "Some text"
-            button.setOnClickListener {
-                //some action
-            }
-        }
-    }
-```
+Usage example:
+ 
+  ```kotlin
+  class MyFragment : Fragment(R.layout.fragment_test) {
+ 
+      private val binding by viewBinding<FragmentTestBinding>()
+ 
+      fun doSomething() {
+          binding.textView.text = "Oooops"
+      }
+  }
+ ```
 
 ## Activity sample
 
